@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🐺 6人狼人殺 — 多人即時連線遊戲</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-card: rgba(18, 22, 38, 0.88);
+      --bg-card-hover: rgba(28, 35, 62, 0.95);
+      --border-gold: #d4af37;
+      --border-subtle: rgba(212, 175, 55, 0.35);
+      --gold-light: #fbeea8;
+      --gold-main: #f59e0b;
+      --wolf-red: #ef4444;
+      --wolf-dark: #450a0a;
+      --seer-blue: #06b6d4;
+      --witch-purple: #a855f7;
+      --villager-green: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Noto Sans TC', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(49, 27, 89, 0.45) 0%, transparent 60%),
+        radial-gradient(circle at 10% 80%, rgba(15, 23, 42, 0.8) 0%, transparent 50%),
+        radial-gradient(circle at 90% 90%, rgba(69, 10, 10, 0.35) 0%, transparent 50%);
+    }
+
+    /* Container */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 16px 0 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .game-logo {
+      font-family: 'Cinzel', 'Noto Serif TC', serif;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #fff 20%, #fbeea8 50%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .sub-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Phase Banner */
+    .phase-banner {
+      background: linear-gradient(90deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.1));
+      border: 1px solid var(--border-gold);
+      border-radius: 12px;
+      padding: 12px 18px;
+      text-align: center;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .phase-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .timer-badge {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-gold);
+      color: #ef4444;
+      font-family: 'Cinzel', monospace;
+      font-size: 22px;
+      font-weight: 900;
+      padding: 4px 14px;
+      border-radius: 20px;
+      min-width: 65px;
+      text-align: center;
+    }
+
+    /* Screen Views */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Login & Join View */
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 480px;
+      margin: 40px auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+    }
+    .input-group {
+      margin-bottom: 18px;
+    }
+    .input-label {
+      display: block;
+      font-size: 14px;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .custom-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 16px;
+      color: #fff;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .custom-input:focus {
+      border-color: var(--border-gold);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d4af37, #f59e0b);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    }
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Rules overview card */
+    .rules-box {
+      margin-top: 28px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      border: 1px dashed rgba(212, 175, 55, 0.25);
+    }
+    .rules-title {
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Lobby Room View */
+    .room-header {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .room-code-badge {
+      font-family: 'Cinzel', monospace;
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: 3px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 4px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-gold);
+    }
+    .copy-btn {
+      font-size: 13px;
+      background: rgba(212, 175, 55, 0.2);
+      border: 1px solid var(--border-gold);
+      color: var(--gold-light);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* 6 Seats Grid */
+    .seats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .seat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      transition: all 0.25s;
+    }
+    .seat-card.active-seat {
+      border-color: var(--border-gold);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.35);
+    }
+    .seat-card.is-me {
+      background: rgba(30, 41, 75, 0.95);
+      border: 2px solid #38bdf8;
+    }
+    .seat-card.is-dead {
+      opacity: 0.45;
+      filter: grayscale(80%);
+    }
+    .seat-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid var(--border-gold);
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .seat-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .seat-name {
+      font-weight: 700;
+      font-size: 16px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .seat-badge {
+      font-size: 12px;
+      display: inline-block;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+    }
+    .seat-badge.host {
+      background: rgba(212, 175, 55, 0.25);
+      color: var(--gold-light);
+    }
+    .seat-badge.dead {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* Secret Card Area */
+    .secret-card-box {
+      background: var(--bg-card);
+      border: 2px solid var(--border-gold);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+    }
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 900;
+      padding: 8px 24px;
+      border-radius: 30px;
+      margin: 12px 0;
+    }
+    .role-wolf { background: linear-gradient(135deg, #ef4444, #7f1d1d); color: #fff; }
+    .role-seer { background: linear-gradient(135deg, #06b6d4, #0e7490); color: #fff; }
+    .role-witch { background: linear-gradient(135deg, #a855f7, #6b21a8); color: #fff; }
+    .role-villager { background: linear-gradient(135deg, #10b981, #065f46); color: #fff; }
+
+    /* Action Panel (Night & Voting) */
+    .action-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .action-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .target-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .target-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .target-btn:hover:not(:disabled) {
+      background: rgba(212, 175, 55, 0.3);
+      border-color: var(--border-gold);
+    }
+    .target-btn.selected {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border-color: #fca5a5;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Live Chat & Log Feed */
+    .feed-container {
+      background: rgba(10, 14, 26, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 14px;
+      height: 240px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .feed-item {
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      line-height: 1.5;
+    }
+    .feed-item.system { border-left: 3px solid var(--border-gold); color: #fde68a; }
+    .feed-item.night { border-left: 3px solid #6366f1; color: #c7d2fe; }
+    .feed-item.day { border-left: 3px solid #f59e0b; color: #fed7aa; }
+    .feed-item.announce { border-left: 3px solid #ef4444; background: rgba(239, 68, 68, 0.15); font-weight: 700; color: #fca5a5; }
+    .feed-item.chat { border-left: 3px solid #38bdf8; color: #e2e8f0; }
+    .feed-item.ghost { border-left: 3px solid #64748b; color: #94a3b8; font-style: italic; }
+    .feed-item.victory { border-left: 3px solid #10b981; background: rgba(16, 185, 129, 0.2); font-weight: 800; color: #6ee7b7; font-size: 16px; }
+
+    /* Chat input row */
+    .chat-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+    }
+    .chat-input:focus { border-color: var(--border-gold); }
+
+    /* Victory Modal / View */
+    .victory-card {
+      background: var(--bg-card);
+      border: 3px solid var(--border-gold);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      margin: 20px 0;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+    .victory-banner {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    /* Sound Switch */
+    .sound-toggle {
+      position: absolute;
+      right: 12px;
+      top: 18px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      color: #fff;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .game-logo { font-size: 22px; }
+      .seats-grid { grid-template-columns: 1fr; }
+      .phase-text { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="game-logo">
+      <span>🐺</span> 6 人 狼 人 殺
+    </div>
+    <div class="sub-title">2 狼人 ｜ 1 預言家 ｜ 1 女巫 ｜ 2 平民（經典速推局）</div>
+    <button class="sound-toggle" id="soundToggle" onclick="toggleAudio()">🔊 音效：開</button>
+  </header>
+
+  <!-- Phase & Timer Banner (Active during game) -->
+  <div class="phase-banner" id="phaseBanner" style="display: none;">
+    <div class="phase-text" id="phaseText">
+      <span>🌙</span> 第 1 夜：天黑請閉眼
+    </div>
+    <div class="timer-badge" id="timerBadge">30</div>
+  </div>
+
+  <!-- SCREEN 1: AUTH & ENTRY -->
+  <div class="screen active" id="authScreen">
+    <div class="auth-card">
+      <div class="input-group">
+        <label class="input-label">請輸入您的玩家暱稱：</label>
+        <input type="text" id="playerNameInput" class="custom-input" placeholder="例如：福爾摩斯" maxlength="12" value="玩家">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="createRoom()">
+          <span>👑</span> 創建新房間
+        </button>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0 16px; color: var(--text-muted); font-size: 13px;">
+        —— 或者輸入房間代碼加入好友對局 ——
+      </div>
+
+      <div class="input-group">
+        <input type="number" id="roomCodeInput" class="custom-input" placeholder="輸入 4 位數房間代碼 (如 8821)">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="joinRoom()">
+          <span>🚪</span> 加入此房間
+        </button>
+      </div>
+
+      <!-- Strategy & Rules Box from User's Link -->
+      <div class="rules-box">
+        <div class="rules-title">📜 官方 6 人局標準規則解讀：</div>
+        • <b>好人陣營 (4人)</b>：預言家 (查驗好壞)、女巫 (解藥/毒藥各一瓶，首夜可自救)、平民 2 位。<br>
+        • <b>狼人陣營 (2人)</b>：每晚商量統一刀口襲擊一名好人。<br>
+        • <b>勝利條件</b>：好人放逐所有 2 隻狼人即獲勝；狼人殺光好人或控場即獲勝！
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: LOBBY -->
+  <div class="screen" id="lobbyScreen">
+    <div class="room-header">
+      <div>
+        <span style="font-size: 13px; color: var(--text-muted);">房間代碼：</span>
+        <span class="room-code-badge" id="lobbyRoomCode">----</span>
+      </div>
+      <button class="copy-btn" onclick="copyRoomLink()">📋 複製邀請連結</button>
+    </div>
+
+    <div class="action-panel" style="margin-bottom: 20px;">
+      <div class="action-title">
+        <span>👥</span> 當前玩家席位（滿 6 人即可發牌開局）：
+      </div>
+      <div class="seats-grid" id="lobbySeatsGrid">
+        <!-- Seats 1..6 rendered via JS -->
+      </div>
+
+      <div class="btn-row" id="hostControls" style="display: none;">
+        <button class="btn btn-secondary" onclick="fillBots()">
+          <span>🤖</span> 一鍵補滿 AI 機器人
+        </button>
+        <button class="btn btn-gold" id="startGameBtn" onclick="startGame()">
+          <span>⚔️</span> 全員就緒，開始遊戲！
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: IN GAME -->
+  <div class="screen" id="gameScreen">
+    <!-- Secret Card Reveal Box -->
+    <div class="secret-card-box" id="secretCardBox">
+      <div style="font-size: 14px; color: var(--text-muted);">您的秘密身份底牌（請勿讓身旁他人看見）：</div>
+      <div id="roleBadgeContainer">
+        <!-- Rendered via JS -->
+      </div>
+      <div id="roleDescText" style="font-size: 14px; color: #cbd5e1; max-width: 600px; margin: 0 auto;"></div>
+    </div>
+
+    <!-- Active Action Box (for night wolf/witch/seer or day voting) -->
+    <div class="action-panel" id="actionPanel" style="display: none;">
+      <div class="action-title" id="actionTitle">
+        <span>⚡</span> 請執行您的專屬行動：
+      </div>
+      <div id="actionContent">
+        <!-- Action buttons rendered via JS -->
+      </div>
+    </div>
+
+    <!-- 6 Seats In-Game Status Grid -->
+    <div class="action-title" style="margin-bottom: 10px;">
+      <span>🪑</span> 場上存活席位狀態：
+    </div>
+    <div class="seats-grid" id="gameSeatsGrid">
+      <!-- In game 6 seats status -->
+    </div>
+
+    <!-- Live Event Feed & Discussion Chat -->
+    <div class="action-title" style="margin: 16px 0 8px;">
+      <span>💬</span> 法官廣播與即時公頻紀錄：
+    </div>
+    <div class="feed-container" id="feedContainer">
+      <!-- Live logs -->
+    </div>
+
+    <div class="chat-row" id="chatRow">
+      <input type="text" id="chatInput" class="chat-input" placeholder="在公頻打字發言（請遵守發言順序）..." maxlength="80" onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn btn-secondary" style="flex: 0 0 90px;" onclick="sendChat()">送出</button>
+      <button class="btn btn-gold" id="finishSpeechBtn" style="flex: 0 0 110px; display: none;" onclick="finishSpeech()">發言完畢</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: GAME OVER -->
+  <div class="screen" id="gameOverScreen">
+    <div class="victory-card">
+      <div class="victory-banner" id="victoryBanner">
+        🎉 好人陣營獲勝！
+      </div>
+      <div id="victoryDesc" style="color: #cbd5e1; font-size: 16px; margin-bottom: 24px;"></div>
+
+      <div class="action-title" style="justify-content: center; margin-bottom: 16px;">
+        <span>🔍</span> 本局全員真實底牌揭曉：
+      </div>
+      <div class="seats-grid" id="revealSeatsGrid">
+        <!-- Reveal all roles -->
+      </div>
+
+      <div class="btn-row" style="max-width: 320px; margin: 24px auto 0;">
+        <button class="btn btn-gold" id="restartBtn" onclick="restartGame()">
+          <span>🔄</span> 再來一局
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================================
+// AUDIO SYNTHESIZER (Web Audio API)
+// ============================================================================
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function toggleAudio() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundToggle').innerText = soundEnabled ? '🔊 音效：開' : '🔇 音效：關';
+}
+
+function playWolfHowl() {
+  if (!soundEnabled) return;
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+
+  osc.type = 'sawtooth';
+  const now = audioCtx.currentTime;
+  osc.frequency.setValueAtTime(140, now);
+  osc.frequency.exponentialRampToValueAtTime(320, now + 0.8);
+  osc.frequency.exponentialRampToValueAtTime(160, now + 2.2);
+
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(450, now);
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.35, now + 0.4);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 2.4);
+}
+
+function playDawnChime() {
+  if (!soundEnabled) return;
+  initAudio();
+  const notes = [523.25, 659.25, 783.99, 1046.50];
+  notes.forEach((freq, idx) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const now = audioCtx.currentTime + idx * 0.12;
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(now);
+    osc.stop(now + 1.2);
+  });
+}
+
+function playGavel() {
+  if (!soundEnabled) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(120, now);
+  osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+
+  gain.gain.setValueAtTime(0.6, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + 0.4);
+}
+
+// ============================================================================
+// WEBSOCKET CLIENT & STATE
+// ============================================================================
+let ws = null;
+let myPlayerName = '';
+let myRoomId = '';
+let mySeat = null;
+let isHost = false;
+let currentGameState = null;
+
+const ROLE_INFO = {
+  wolf: { name: '狼人', icon: '🐺', class: 'role-wolf', desc: '狼人陣營：每晚與狼同伴商討，統一刀口殺死一名好人。白天請偽裝好人陣營躲避查殺！' },
+  seer: { name: '預言家', icon: '🔮', class: 'role-seer', desc: '好人陣營領袖：每晚可以指定查驗一名存活玩家的真實身份（好人／狼人）。白天帶領好人放逐狼人！' },
+  witch: { name: '女巫', icon: '🧪', class: 'role-witch', desc: '好人陣營強力神職：擁有一瓶解藥（救被殺者）和一瓶毒藥（毒殺一人），每晚限用一瓶，首夜可自救！' },
+  villager: { name: '平民', icon: '🛡️', class: 'role-villager', desc: '好人陣營基石：沒有特殊技能，夜間閉眼。請認真辨別場上發言邏輯，白天投出你認定的狼人！' }
+};
+
+function connectWebSocket() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}`;
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log('Connected to Werewolf server');
+    // Check if URL has ?room=
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      document.getElementById('roomCodeInput').value = roomParam;
+    }
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    handleServerMessage(data);
+  };
+
+  ws.onclose = () => {
+    console.log('WS connection closed. Reconnecting in 2s...');
+    setTimeout(connectWebSocket, 2000);
+  };
+}
+
+connectWebSocket();
+
+function createRoom() {
+  initAudio();
+  const name = document.getElementById('playerNameInput').value.trim() || '房主';
+  myPlayerName = name;
+  ws.send(JSON.stringify({ type: 'CREATE_ROOM', name }));
+}
+
+function joinRoom() {
+  initAudio();
+  const name = document.getElementById('playerNameInput').value.trim() || '玩家';
+  const roomId = document.getElementById('roomCodeInput').value.trim();
+  if (!roomId) {
+    alert('請輸入房間代碼！');
+    return;
+  }
+  myPlayerName = name;
+  ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomId, name }));
+}
+
+function fillBots() {
+  ws.send(JSON.stringify({ type: 'FILL_BOTS' }));
+}
+
+function startGame() {
+  ws.send(JSON.stringify({ type: 'START_GAME' }));
+}
+
+function restartGame() {
+  ws.send(JSON.stringify({ type: 'RESTART_GAME' }));
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  ws.send(JSON.stringify({ type: 'PLAYER_CHAT', text }));
+  input.value = '';
+}
+
+function finishSpeech() {
+  ws.send(JSON.stringify({ type: 'FINISH_SPEECH' }));
+}
+
+function copyRoomLink() {
+  const url = `${window.location.origin}/?room=${myRoomId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert(`房間邀請連結已複製：\n${url}\n好友開啟即可直接加入！`);
+  }).catch(() => {
+    prompt('請複製以下邀請連結發給好友：', url);
+  });
+}
+
+// ============================================================================
+// SERVER MESSAGE HANDLER
+// ============================================================================
+let lastStatus = null;
+
+function handleServerMessage(data) {
+  if (data.type === 'JOINED_ROOM') {
+    myRoomId = data.roomId;
+    mySeat = data.seat;
+    isHost = data.isHost;
+    document.getElementById('lobbyRoomCode').innerText = myRoomId;
+    switchScreen('lobbyScreen');
+  }
+  else if (data.type === 'ERROR') {
+    alert(data.message);
+  }
+  else if (data.type === 'ROOM_STATE') {
+    currentGameState = data.state;
+    renderGameState(data.state);
+  }
+}
+
+function switchScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+// ============================================================================
+// UI RENDERING
+// ============================================================================
+function renderGameState(state) {
+  // Check phase change sound effects
+  if (lastStatus !== state.status) {
+    if (state.status.startsWith('NIGHT')) playWolfHowl();
+    if (state.status === 'DAY_ANNOUNCE') playDawnChime();
+    if (state.status === 'DAY_VOTING') playGavel();
+    lastStatus = state.status;
+  }
+
+  // 1. Lobby Phase
+  if (state.status === 'LOBBY') {
+    switchScreen('lobbyScreen');
+    document.getElementById('phaseBanner').style.display = 'none';
+
+    const grid = document.getElementById('lobbySeatsGrid');
+    grid.innerHTML = '';
+    for (let s = 1; s <= 6; s++) {
+      const p = state.players.find(pl => pl.seat === s);
+      const div = document.createElement('div');
+      div.className = 'seat-card' + (p && p.seat === state.mySeat ? ' is-me' : '');
+      div.innerHTML = `
+        <div class="seat-num">${s}</div>
+        <div class="seat-info">
+          <div class="seat-name">${p ? p.name : '<span style="color:#64748b">等待加入...</span>'}</div>
+          ${p ? `<span class="seat-badge ${p.isHost ? 'host' : ''}">${p.isHost ? '👑 房主' : (p.isBot ? '🤖 AI 機器人' : '👤 真人玩家')}</span>` : ''}
+        </div>
+      `;
+      grid.appendChild(div);
+    }
+
+    const hostControls = document.getElementById('hostControls');
+    const me = state.players.find(pl => pl.seat === state.mySeat);
+    if (me && me.isHost) {
+      hostControls.style.display = 'flex';
+      const startBtn = document.getElementById('startGameBtn');
+      startBtn.disabled = state.players.length !== 6;
+      startBtn.innerText = state.players.length === 6 ? '⚔️ 全員就緒，開始遊戲！' : `等待玩家加入 (${state.players.length}/6)`;
+    } else {
+      hostControls.style.display = 'none';
+    }
+    return;
+  }
+
+  // 2. Game Over Phase
+  if (state.status === 'GAME_OVER') {
+    switchScreen('gameOverScreen');
+    document.getElementById('phaseBanner').style.display = 'none';
+
+    const aliveWolves = state.players.filter(p => p.role === 'wolf' && p.isAlive);
+    const goodWon = aliveWolves.length === 0;
+
+    const banner = document.getElementById('victoryBanner');
+    banner.innerText = goodWon ? '🎉 好人陣營獲勝！' : '🐺 狼人陣營獲勝！';
+    banner.style.color = goodWon ? '#10b981' : '#ef4444';
+
+    document.getElementById('victoryDesc').innerText = goodWon 
+      ? '正義破曉！村民與神職同心協力，成功放逐了所有潛藏的狼人！'
+      : '黑夜降臨村莊！狼人成功獵殺好人並掌控了全局！';
+
+    const rGrid = document.getElementById('revealSeatsGrid');
+    rGrid.innerHTML = '';
+    state.players.forEach(p => {
+      const info = ROLE_INFO[p.role] || { name: p.role, icon: '❓', class: 'role-villager' };
+      const div = document.createElement('div');
+      div.className = 'seat-card' + (!p.isAlive ? ' is-dead' : '');
+      div.innerHTML = `
+        <div class="seat-num">${p.seat}</div>
+        <div class="seat-info">
+          <div class="seat-name">${p.name}</div>
+          <span class="seat-badge ${p.isAlive ? '' : 'dead'}">${p.isAlive ? '存活' : '已倒牌'}</span>
+          <div class="role-badge ${info.class}" style="font-size:15px; padding:4px 12px; margin:6px 0 0;">
+            ${info.icon} ${info.name}
+          </div>
+        </div>
+      `;
+      rGrid.appendChild(div);
+    });
+
+    const restartBtn = document.getElementById('restartBtn');
+    const me = state.players.find(pl => pl.seat === state.mySeat);
+    restartBtn.style.display = (me && me.isHost) ? 'block' : 'none';
+    return;
+  }
+
+  // 3. In-Game Active Phases
+  switchScreen('gameScreen');
+  const banner = document.getElementById('phaseBanner');
+  banner.style.display = 'flex';
+  document.getElementById('timerBadge').innerText = state.timerSeconds;
+
+  // Phase Title text
+  const pText = document.getElementById('phaseText');
+  if (state.status === 'DEALING') {
+    pText.innerHTML = `<span>🃏</span> 正在發放身份底牌...`;
+  } else if (state.status === 'NIGHT_WOLVES') {
+    pText.innerHTML = `<span>🌙</span> 第 ${state.round} 夜：狼人正在行動`;
+  } else if (state.status === 'NIGHT_WITCH') {
+    pText.innerHTML = `<span>🌙</span> 第 ${state.round} 夜：女巫正在行動`;
+  } else if (state.status === 'NIGHT_SEER') {
+    pText.innerHTML = `<span>🌙</span> 第 ${state.round} 夜：預言家正在查驗`;
+  } else if (state.status === 'DAY_ANNOUNCE') {
+    pText.innerHTML = `<span>🌅</span> 第 ${state.round} 天：天亮破曉公布死訊`;
+  } else if (state.status === 'DAY_SPEECH') {
+    pText.innerHTML = `<span>🗣️</span> 第 ${state.round} 天：輪流發言討論階段`;
+  } else if (state.status === 'DAY_VOTING') {
+    pText.innerHTML = `<span>🗳️</span> 第 ${state.round} 天：放逐投票進行中！`;
+  } else if (state.status === 'DAY_VOTE_RESULT') {
+    pText.innerHTML = `<span>⚖️</span> 放逐結果公布！`;
+  }
+
+  // Render My Role Card
+  const rCont = document.getElementById('roleBadgeContainer');
+  const rDesc = document.getElementById('roleDescText');
+  if (state.myRole && ROLE_INFO[state.myRole]) {
+    const info = ROLE_INFO[state.myRole];
+    rCont.innerHTML = `<div class="role-badge ${info.class}">${info.icon} 您的身份：${info.name}</div>`;
+    rDesc.innerText = info.desc;
+  }
+
+  // Render Action Panel according to phase & role
+  renderActionPanel(state);
+
+  // Render In-Game Seats Status
+  const sGrid = document.getElementById('gameSeatsGrid');
+  sGrid.innerHTML = '';
+  state.players.forEach(p => {
+    const isMe = p.seat === state.mySeat;
+    const isSpeaking = state.status === 'DAY_SPEECH' && state.dayState.currentSpeakerSeat === p.seat;
+    const div = document.createElement('div');
+    div.className = 'seat-card' + (isMe ? ' is-me' : '') + (!p.isAlive ? ' is-dead' : '') + (isSpeaking ? ' active-seat' : '');
+    
+    // Role label if visible
+    let roleText = '';
+    if (p.role) {
+      const rInfo = ROLE_INFO[p.role];
+      roleText = `<div style="font-size:13px; font-weight:700; color:var(--gold-light); margin-top:2px;">${rInfo.icon} ${rInfo.name}</div>`;
+    }
+
+    div.innerHTML = `
+      <div class="seat-num">${p.seat}</div>
+      <div class="seat-info">
+        <div class="seat-name">${p.name} ${isMe ? '(您)' : ''}</div>
+        <span class="seat-badge ${p.isAlive ? '' : 'dead'}">${p.isAlive ? (isSpeaking ? '🎙️ 發言中...' : '存活') : '💀 已倒牌'}</span>
+        ${roleText}
+      </div>
+    `;
+    sGrid.appendChild(div);
+  });
+
+  // Finish speech button visibility
+  const finishBtn = document.getElementById('finishSpeechBtn');
+  if (state.status === 'DAY_SPEECH' && state.dayState.currentSpeakerSeat === state.mySeat) {
+    finishBtn.style.display = 'block';
+  } else {
+    finishBtn.style.display = 'none';
+  }
+
+  // Render logs
+  renderLogs(state.logs);
+}
+
+function renderActionPanel(state) {
+  const panel = document.getElementById('actionPanel');
+  const title = document.getElementById('actionTitle');
+  const content = document.getElementById('actionContent');
+
+  const me = state.players.find(p => p.seat === state.mySeat);
+  const isAlive = me && me.isAlive;
+
+  // 1. NIGHT_WOLVES
+  if (state.status === 'NIGHT_WOLVES' && isAlive && state.myRole === 'wolf') {
+    panel.style.display = 'block';
+    title.innerHTML = `<span>🐺</span> 狼人行動：請選擇今晚要襲擊的目標`;
+    const targets = state.players.filter(p => p.isAlive && p.role !== 'wolf');
+    let html = `<div class="target-btn-grid">`;
+    targets.forEach(t => {
+      html += `<button class="target-btn" onclick="submitWolfAction(${t.seat})">🔪 擊殺 ${t.seat}號 ${t.name}</button>`;
+    });
+    html += `</div>`;
+    content.innerHTML = html;
+  }
+  // 2. NIGHT_WITCH
+  else if (state.status === 'NIGHT_WITCH' && isAlive && state.myRole === 'witch') {
+    panel.style.display = 'block';
+    title.innerHTML = `<span>🧪</span> 女巫行動：今晚用藥選擇`;
+
+    const victimSeat = state.nightTargetForWitch;
+    const victim = state.players.find(p => p.seat === victimSeat);
+
+    let html = `<div style="margin-bottom:12px; font-size:15px;">`;
+    if (victim) {
+      html += `今晚被狼人襲擊的玩家是：<b style="color:#ef4444">${victim.seat}號 ${victim.name}</b><br>`;
+    } else {
+      html += `今晚是平安夜，無人中刀。<br>`;
+    }
+    html += `</div><div class="target-btn-grid">`;
+
+    if (state.witchHasElixir && victim) {
+      html += `<button class="target-btn" style="background:#065f46" onclick="submitWitchAction('SAVE', null)">💚 使用解藥救活 ${victim.seat}號</button>`;
+    }
+
+    if (state.witchHasPoison) {
+      const poisonTargets = state.players.filter(p => p.isAlive && p.seat !== me.seat);
+      poisonTargets.forEach(pt => {
+        html += `<button class="target-btn" style="background:#701a75" onclick="submitWitchAction('POISON', ${pt.seat})">☠️ 使用毒藥毒殺 ${pt.seat}號</button>`;
+      });
+    }
+
+    html += `<button class="target-btn" onclick="submitWitchAction('PASS', null)">⏭️ 本晚不用藥 (跳過)</button>`;
+    html += `</div>`;
+    content.innerHTML = html;
+  }
+  // 3. NIGHT_SEER
+  else if (state.status === 'NIGHT_SEER' && isAlive && state.myRole === 'seer') {
+    panel.style.display = 'block';
+    title.innerHTML = `<span>🔮</span> 預言家行動：請選擇一名存活玩家查驗陣營`;
+
+    if (state.seerResult) {
+      content.innerHTML = `
+        <div style="background:rgba(6,182,212,0.2); border:1px solid #06b6d4; border-radius:10px; padding:14px; text-align:center;">
+          查驗結果：<b>${state.seerResult.seat}號 ${state.seerResult.name}</b> 是
+          <span style="font-size:20px; font-weight:900; color:${state.seerResult.isWolf ? '#ef4444' : '#10b981'}">
+            【${state.seerResult.isWolf ? '查殺！是狼人！' : '金水！是好人！'}】
+          </span>
+        </div>
+      `;
+    } else {
+      const candidates = state.players.filter(p => p.isAlive && p.seat !== me.seat);
+      let html = `<div class="target-btn-grid">`;
+      candidates.forEach(c => {
+        html += `<button class="target-btn" onclick="submitSeerAction(${c.seat})">查驗 ${c.seat}號 ${c.name}</button>`;
+      });
+      html += `</div>`;
+      content.innerHTML = html;
+    }
+  }
+  // 4. DAY_VOTING
+  else if (state.status === 'DAY_VOTING' && isAlive) {
+    panel.style.display = 'block';
+    title.innerHTML = `<span>🗳️</span> 放逐投票：請投出您認為是狼人的玩家`;
+    const candidates = state.players.filter(p => p.isAlive && p.seat !== me.seat);
+    let html = `<div class="target-btn-grid">`;
+    candidates.forEach(c => {
+      html += `<button class="target-btn" onclick="submitVote(${c.seat})">投出 ${c.seat}號 ${c.name}</button>`;
+    });
+    html += `<button class="target-btn" style="background:#475569" onclick="submitVote(null)">棄票</button>`;
+    html += `</div>`;
+    content.innerHTML = html;
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function submitWolfAction(targetSeat) {
+  ws.send(JSON.stringify({ type: 'WOLF_ACTION', target: targetSeat }));
+  document.getElementById('actionContent').innerHTML = `<div style="color:#ef4444; font-weight:700;">已選擇襲擊 ${targetSeat} 號玩家，等待夜間結算...</div>`;
+}
+
+function submitWitchAction(action, targetSeat) {
+  ws.send(JSON.stringify({ type: 'WITCH_ACTION', action, target: targetSeat }));
+  document.getElementById('actionContent').innerHTML = `<div style="color:#10b981; font-weight:700;">女巫行動已確認，等待夜間結算...</div>`;
+}
+
+function submitSeerAction(targetSeat) {
+  ws.send(JSON.stringify({ type: 'SEER_ACTION', target: targetSeat }));
+}
+
+function submitVote(targetSeat) {
+  ws.send(JSON.stringify({ type: 'PLAYER_VOTE', target: targetSeat }));
+  document.getElementById('actionContent').innerHTML = `<div style="color:#f59e0b; font-weight:700;">您的投票已送出，等待所有人投完...</div>`;
+}
+
+function renderLogs(logs) {
+  const container = document.getElementById('feedContainer');
+  container.innerHTML = '';
+  logs.forEach(l => {
+    const div = document.createElement('div');
+    const tagClass = l.tag ? l.tag.toLowerCase() : 'system';
+    div.className = `feed-item ${tagClass}`;
+    div.innerHTML = `<span style="opacity:0.6; font-size:12px;">[${l.time}]</span> ${l.content}`;
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+</script>
+</body>
+</html>
